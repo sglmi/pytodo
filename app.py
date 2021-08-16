@@ -38,12 +38,16 @@ class AddTodo(ttk.Frame):
 		# widget config
 		self.todo_text.focus()
 		# pack widgets
-		self.todo_text.pack(side=tk.LEFT)
-		self.add_todo.pack(side=tk.RIGHT)
+		self.todo_text.grid(row=0, column=0, stick="wesn", padx=(0, 5))
+		self.add_todo.grid(row=0, column=1, stick="wesn")
 		# widget bind
 		self.todo_text.bind("<Return>", self.create_todo)
+		# responsive
+		self.columnconfigure(0, weight=9)
+		self.columnconfigure(1, weight=1)
+		self.rowconfigure(0, weight=1)
 
-	def create_todo(self, event):
+	def create_todo(self, *event):
 		todo = Todo(self.todo_list, todo_text=self.todo_text.get())
 		todo.pack()
 		# clear todo_text entry after adding the todo
@@ -60,16 +64,17 @@ class TodoList(ttk.Frame):
 
 class MainFrame(tk.Frame):
 	def __init__(self, master, *args, **kwargs):
-		super().__init__(master, *args, **kwargs)
-
+		super().__init__(master)
 		# todo list
 		todo_list_frame = TodoList(self, padding="3 3 12 12", relief='sunken')
-		todo_list_frame.pack(expand=True, fill=tk.BOTH)
-
+		todo_list_frame.grid(row=0, column=0, stick="wesn")
 		# Make to do part
 		todo_frame = AddTodo(self, todo_list_frame=todo_list_frame)
-		todo_frame.pack(expand=True, fill=tk.BOTH)
-
+		todo_frame.grid(row=1, column=0, stick="wesn", padx=5, pady=5)
+		# responsive stuff
+		self.columnconfigure(0, weight=1)
+		self.rowconfigure(0, weight=15)
+		self.rowconfigure(1, weight=1)
 
 class App(tk.Tk):
 	def __init__(self, *args, **kwargs):
@@ -77,6 +82,8 @@ class App(tk.Tk):
 		self.title("Py To Do List")
 		mainframe = MainFrame(self)
 		mainframe.pack(fill=tk.BOTH, expand=True)
+		self.columnconfigure(0, weight=1)
+		self.rowconfigure(0, weight=1)
 
 
 def main():
