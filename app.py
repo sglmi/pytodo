@@ -102,13 +102,20 @@ class Todo(ttk.Frame):
 		# responsive shits
 		self.columnconfigure(1, weight=10)
 
+		if self.todo_done:
+			self.on_check()
+
+
 	def on_check(self):
+		# self.check_var.set(self.todo_done)
 		# if checkbutton check cross over todo_text entry
 		if self.check_var.get():
 			self.todo_entry["font"] = font.Font(overstrike=1, slant="italic")
+			self.todo_entry["state"] = "disabled"
 			self.db.update_done(self.todo_id, 1)
 		else:
 			self.todo_entry["font"] = font.Font(overstrike=0)
+			self.todo_entry["state"] = "normal"
 			self.db.update_done(self.todo_id, 0)
 
 
