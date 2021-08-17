@@ -27,10 +27,10 @@ class Database:
 
 	def create(self, todo):
 		conn = self.create_conn()
-		sql = "INSERT INTO todo(text) VALUES(?)"
+		sql = "INSERT INTO todo(text, done) VALUES(?, ?)"
 		if conn is not None:
 			cursor = conn.cursor()
-			cursor.execute(sql, (todo,))
+			cursor.execute(sql, (todo, 0))
 			conn.commit()
 			return cursor.lastrowid
 
@@ -43,17 +43,41 @@ class Database:
 			conn.commit()
 
 
-	def update(self):
-		pass
+	def update_todo(self, todo_id, value):
+		conn = self.create_conn()
+		if conn is not None:
+			sql = "UPDATE todo SET text = ? WHERE id = ?"
+			cursor = conn.cursor()
+			cursor.execute(sql, (value, todo_id))
+			conn.commit()
+
+	def update_done(self, todo_id, value):
+		conn = self.create_conn()
+		if conn is not None:
+			sql = "UPDATE todo SET done = ? WHERE id = ?"
+			cursor = conn.cursor()
+			cursor.execute(sql, (value, todo_id))
+			conn.commit()
+
+	def is_done(self, todo_id):
+		conn = self.create_conn()
+		sql = "SELECT done FROM todo WHERE id=?"
+		if conn is not None:
+			cursor = conn.cursor()
+			cursor.execute(sql, (todo_id,))
+			result = cursor.fetchone()
+			return result
 
 
 class Todo(ttk.Frame):
 	def __init__(self, master, *args, **kwargs):
 		super().__init__(master)
 		self.db = Database(dbname="todo.db")
-		self.check_var = tk.BooleanVar()
+		self.check_var = tk.IntVar()
 		self.todo_id = kwargs.get("todo_id")
 		self.todo_text = kwargs.get("todo_text")
+		self.todo_done = kwargs.get("todo_done") 
+		self.check_var.set(self.todo_done)  # mark checkbutton if todo done
 
 		# images
 		self.delete_img =  ImageTk.PhotoImage(Image.open("./images/001-delete.png"))
@@ -81,18 +105,21 @@ class Todo(ttk.Frame):
 	def on_check(self):
 		# if checkbutton check cross over todo_text entry
 		if self.check_var.get():
-			self.todo_text["font"] = font.Font(overstrike=1, slant="italic")
+			self.todo_entry["font"] = font.Font(overstrike=1, slant="italic")
+			self.db.update_done(self.todo_id, 1)
 		else:
-			self.todo_text["font"] = font.Font(overstrike=0)
+			self.todo_entry["font"] = font.Font(overstrike=0)
+			self.db.update_done(self.todo_id, 0)
+
 
 	def on_delete(self):
-		# get id of the todo 
-		self.db.delete(self.todo_id)
-
-		self.forget()
+		self.db.delete(self.todo_id)  # del from db
+		self.forget()  # del from ui
 
 	def on_keypress(self, *args):
-		print("you typed!!")
+		todo_text = self.todo_entry.get()
+		self.db.update_todo(self.todo_id, todo_text)
+		print(f"you typed!! {todo_text}")
 		# update db when type something.
 
 
@@ -121,10 +148,8 @@ class AddTodo(ttk.Frame):
 		todo = Todo(self.todo_list, todo_text=self.todo_text.get())
 		todo.pack(padx=5, fill=tk.X)
 		# adding to do to the database
-		conn = self.db.create_conn()
-		if conn is not None:
-			todo_id = self.db.create(self.todo_text.get())
-			print(todo_id)
+		todo_id = self.db.create(self.todo_text.get())
+		print(todo_id, "created!")
 
 		# clear todo_text entry after adding the todo
 		self.todo_text.delete(0, tk.END)
@@ -141,7 +166,8 @@ class TodoList(ttk.Frame):
 	def create_todos(self):
 		all_todo = self.db.read_all()
 		for todo in all_todo:
-			todo_frame = Todo(self, todo_text=todo[1], todo_id=todo[0])
+			todo_frame = Todo(self, todo_text=todo[1], todo_id=todo[0], todo_done=todo[2])
+
 			todo_frame.pack(padx=5, fill=tk.X)
 
 
@@ -172,7 +198,6 @@ class App(tk.Tk):
 
 def main():
 	app = App()
-	# app.title = "Py To Do"
 	app.mainloop()
 
 
