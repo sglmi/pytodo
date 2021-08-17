@@ -5,6 +5,29 @@ from tkinter import font
 from tkinter import ttk
 from PIL import Image, ImageTk
 
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # canvas.grid(row=0, column=0, sticky="wesn")
+        # scrollbar.grid(row=0, column=1, sticky="ns")
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
 class Database:
 	def __init__(self, dbname):
 		self.dbname = dbname
@@ -73,6 +96,7 @@ class Database:
 class Todo(ttk.Frame):
 	def __init__(self, master, *args, **kwargs):
 		super().__init__(master)
+		self["relief"] = "groove"
 		self.db = Database(dbname="todo.db")
 		self.check_var = tk.IntVar()
 		self.todo_id = kwargs.get("todo_id")
@@ -93,7 +117,7 @@ class Todo(ttk.Frame):
 		# Grid widgets
 		self.check.grid(row=0, column=0)
 		self.todo_entry.grid(row=0, column=1, stick="ew")
-		self.delete.grid(row=0, column=3)
+		self.delete.grid(row=0, column=2)
 
 		for child in self.winfo_children():
 			child.grid_configure(padx=5, pady=2)
@@ -118,7 +142,6 @@ class Todo(ttk.Frame):
 			self.todo_entry["font"] = font.Font(overstrike=0)
 			self.todo_entry["state"] = "normal"
 			self.db.update_done(self.todo_id, 0)
-
 
 	def on_delete(self):
 		self.db.delete(self.todo_id)  # del from db
@@ -162,7 +185,7 @@ class AddTodo(ttk.Frame):
 		self.todo_text.delete(0, tk.END)
 
 
-class TodoList(ttk.Frame):
+class TodoList(ScrollableFrame):
 	def __init__(self, master, *args, **kwargs):
 		super().__init__(master, *args, **kwargs)
 		# self.message = ttk.Label(self, text="List of all todo's")
@@ -173,30 +196,29 @@ class TodoList(ttk.Frame):
 	def create_todos(self):
 		all_todo = self.db.read_all()
 		for todo in all_todo:
-			print(todo)
-			todo_frame = Todo(self, todo_text=todo[1], todo_id=todo[0], todo_done=todo[2])
+			todo_frame = Todo(self.scrollable_frame, todo_text=todo[1], todo_id=todo[0], todo_done=todo[2])
 			todo_frame.pack(padx=5, fill=tk.X)
 
 
-class MainFrame(tk.Frame):
+class MainFrame(ttk.Frame):
 	def __init__(self, master, *args, **kwargs):
 		super().__init__(master)
 		# todo list
 		todo_list_frame = TodoList(self, padding="3 3 12 12", relief='sunken')
 		todo_list_frame.grid(row=0, column=0, stick="wesn")
-		# Make to do part
-		todo_frame = AddTodo(self, todo_list_frame=todo_list_frame)
-		todo_frame.grid(row=1, column=0, stick="wesn", padx=5, pady=5)
+		# Make Add todo part
+		todo_frame = AddTodo(self, todo_list_frame=todo_list_frame.scrollable_frame)
+		todo_frame.grid(row=1, column=0, stick="we", padx=5, pady=5)
 		# responsive stuff
 		self.columnconfigure(0, weight=1)
-		self.rowconfigure(0, weight=15)
+		self.rowconfigure(0, weight=5)
 		self.rowconfigure(1, weight=1)
 
 class App(tk.Tk):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.title("Py To Do List")
-		self.geometry("500x500")
+		self.geometry("400x300")
 		mainframe = MainFrame(self)
 		mainframe.pack(fill=tk.BOTH, expand=True)
 		self.columnconfigure(0, weight=1)
