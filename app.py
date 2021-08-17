@@ -52,6 +52,7 @@ class Database:
 			conn.commit()
 
 	def update_done(self, todo_id, value):
+		print(f"update_done todo_id {todo_id} value: {value}",)
 		conn = self.create_conn()
 		if conn is not None:
 			sql = "UPDATE todo SET done = ? WHERE id = ?"
@@ -107,8 +108,8 @@ class Todo(ttk.Frame):
 
 
 	def on_check(self):
-		# self.check_var.set(self.todo_done)
 		# if checkbutton check cross over todo_text entry
+		print(f"on_check, self.todo_id: {self.todo_id} todotext: {self.todo_text}")
 		if self.check_var.get():
 			self.todo_entry["font"] = font.Font(overstrike=1, slant="italic")
 			self.todo_entry["state"] = "disabled"
@@ -126,8 +127,6 @@ class Todo(ttk.Frame):
 	def on_keypress(self, *args):
 		todo_text = self.todo_entry.get()
 		self.db.update_todo(self.todo_id, todo_text)
-		print(f"you typed!! {todo_text}")
-		# update db when type something.
 
 
 class AddTodo(ttk.Frame):
@@ -152,11 +151,12 @@ class AddTodo(ttk.Frame):
 		self.rowconfigure(0, weight=1)
 
 	def create_todo(self, *event):
-		todo = Todo(self.todo_list, todo_text=self.todo_text.get())
-		todo.pack(padx=5, fill=tk.X)
 		# adding to do to the database
 		todo_id = self.db.create(self.todo_text.get())
-		print(todo_id, "created!")
+		# create to do in UI
+		todo = Todo(self.todo_list, todo_text=self.todo_text.get(), todo_id=todo_id, todo_done=0)
+		todo.pack(padx=5, fill=tk.X)
+		print(f"created! with the id of {todo_id}")
 
 		# clear todo_text entry after adding the todo
 		self.todo_text.delete(0, tk.END)
@@ -173,8 +173,8 @@ class TodoList(ttk.Frame):
 	def create_todos(self):
 		all_todo = self.db.read_all()
 		for todo in all_todo:
+			print(todo)
 			todo_frame = Todo(self, todo_text=todo[1], todo_id=todo[0], todo_done=todo[2])
-
 			todo_frame.pack(padx=5, fill=tk.X)
 
 
